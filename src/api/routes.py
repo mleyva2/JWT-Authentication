@@ -8,7 +8,8 @@ from argon2 import PasswordHasher
 ph = PasswordHasher()
 api = Blueprint('api', __name__)
 
-CORS(api)
+# CORS(api)
+
 
 @api.route('/hello', methods=['POST', 'GET'])
 def handle_hello():
@@ -18,7 +19,6 @@ def handle_hello():
     }
 
     return jsonify(response_body), 200
-
 
 @api.route('/register', methods=['POST'])
 def register():
@@ -34,21 +34,22 @@ def register():
 
     return jsonify(response_body), 204
 
-
 @api.route('/login', methods=['POST'])
 def login():
 
-    content = request.get_json(silent=True)
+    content = request.get_json()
+    print(content)
     user = User.query.filter(User.email == content["email"]).first()
     if user is None:
         return jsonify({"message": "invalid user"}), 403
     
-    if not ph.verify(user.password, content["password"]):
+    try:
+        ph.verify(user.password, content["password"])
+    except:
         return jsonify({"message": "invalid password"}), 403
-    
+        
     access_token = create_access_token(identity=user.id, additional_claims={"email":user.email})
     return jsonify({ "token": access_token, "user_id": user.id })
-
 
 @api.route('/userinfo', methods=['GET'])
 @jwt_required()
